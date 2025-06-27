@@ -3,7 +3,18 @@ import os
 from dotenv import load_dotenv
 
 
+def list_available_models():
+    """Lists the available Gemini models that support content generation."""
+
+    print("\nAvailable Gemini models:")
+    for m in genai.list_models():
+        if 'generateContent' in m.supported_generation_methods:
+            print(f"  - {m.name}")
+
+
 def main():
+    """Main function to run the console-based Gemini chatbot."""
+
     load_dotenv()
 
     print("Hello from hello-gemini!")
@@ -16,26 +27,33 @@ def main():
     api_key = os.getenv("GEMINI_API_KEY")
     genai.configure(api_key=api_key)
 
-    # List available models
-    print("\nAvailable Gemini models:")
-    for m in genai.list_models():
-        if 'generateContent' in m.supported_generation_methods:
-            print(f"  - {m.name}")
+    # list_available_models()
 
     # Initialize the Gemini model (replace 'gemini-pro' with an available model name from the list above)
     model = genai.GenerativeModel('gemini-2.5-flash')
 
-    # Example: Generate content
-    prompt = "Write a short story about a robot who discovers art."
-    print(f"\nGenerating content for prompt: '{prompt}'")
+    # Start a chat session
+    chat = model.start_chat(history=[])
 
-    try:
-        response = model.generate_content(prompt)
-        print("\nGenerated Story:")
-        print(response.text)
-    except Exception as e:
-        print(f"\nAn error occurred: {e}")
-        print("Please ensure your API key is correct and you have network connectivity.")
+    print("\nStart chatting with Gemini! Type 'exit' or 'quit' to end the conversation.")
+
+    while True:
+        user_input = input("👤 ( User ): ")
+        if user_input.lower() in ["exit", "quit"]:
+            print("Exiting chat. Goodbye!")
+            break
+
+        try:
+            response = chat.send_message(user_input, stream=True)
+            print("🤖 (Gemini): ", end="")
+            for chunk in response:
+                print(chunk.text, end="")
+            print() # Newline after the full response
+        except Exception as e:
+            print(f"\nAn error occurred: {e}")
+            print(
+                "Please ensure your API key is correct and you have network connectivity.")
+            print("You can try again or type 'exit' to quit.")
 
 
 if __name__ == "__main__":

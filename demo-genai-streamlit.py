@@ -34,12 +34,11 @@ if prompt := st.chat_input("Say something..."):
 
     try:
         model = genai.GenerativeModel(MODEL_NAME)
-        response = model.generate_content(prompt)
-        ai_response = response.text
+        response = model.generate_content(prompt, stream=True)
 
         # Display assistant response in chat message container
         with st.chat_message("assistant"):
-            st.markdown(ai_response)
+            ai_response = st.write_stream(chunk.text for chunk in response)
         # Add assistant response to chat history
         st.session_state.messages.append({"role": "assistant", "content": ai_response})
 
