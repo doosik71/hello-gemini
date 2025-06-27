@@ -12,6 +12,7 @@ This file helps Gemini understand your project better. You can provide instructi
 
 *   **Coding Style:** Follow PEP 8 for Python code.
 *   **Libraries:** Use the standard Python library whenever possible.
+    * Use `uv` command instead of `pip` because `uv` is faster than `pip`.
 *   **Testing:** Use the `unittest` module for tests.
 *   **Commits:** Write commit messages in the conventional commit format.
 
@@ -19,3 +20,5 @@ This file helps Gemini understand your project better. You can provide instructi
 
 *   `main.py`: The main entry point of the application.
 *   `README.md`: Contains project documentation.
+*   `demo-genai-console.py`: A console-based application demonstrating interaction with the Generative AI.
+*   `demo-genai-streamlit.py`: A Streamlit GUI application for chatting with the Generative AI.
