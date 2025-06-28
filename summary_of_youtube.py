@@ -12,7 +12,7 @@ Maintain a direct and objective tone without using phrases like "the script prov
 Write in Korean."""
 
 
-def summarize_youtube(url: str) -> None:
+def summarize(url: str) -> None:
     if not url:
         return
 
@@ -37,8 +37,8 @@ def summarize_youtube(url: str) -> None:
             st.error("Could not extract transcript from the YouTube video.")
             return
 
-        if len(transcript_text) > 30000:
-            transcript_text = (transcript_text[:30000] +
+        if len(transcript_text) > 500000:
+            transcript_text = (transcript_text[:500000] +
                                "\n\n[Content truncated due to length...]")
 
         st.write(f'<iframe width="560" height="315" src="https://www.youtube.com/embed/{video_id}" ' +
