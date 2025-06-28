@@ -42,16 +42,14 @@ def get_pdf_text(pdf_url):
 
 def summarize_text(text):
     prompt = f"Summarize the following text (in Korean):\n\n{text}"
-    response = st.session_state.model.generate_content(prompt)
-    return response.text
+    return st.session_state.model.generate_content(prompt, stream=True)
 
 
 def get_gemini_response(question, context):
     prompt = (f"Based on the following context, answer the question (in Korean):\n\n" +
               f"Context: {context}\n\n" +
               f"Question: {question}")
-    response = st.session_state.model.generate_content(prompt)
-    return response.text
+    return st.session_state.model.generate_content(prompt, stream=True)
 
 
 st.set_page_config(page_title="PDF Chat with Gemini", layout="wide")
@@ -75,15 +73,8 @@ col1, col2 = st.columns([6, 4])
 
 with col1:
     if pdf_url:
-        if pdf_url != st.session_state.pdf_url:
-            with st.spinner("Extracing contents..."):
-                pdf_text = get_pdf_text(pdf_url)
-            st.session_state.pdf_text = pdf_text
-            st.session_state.pdf_url = pdf_url
-
-        if st.session_state.pdf_text:
-            st.write(f'<iframe src="{html.escape(pdf_url)}" width="100%" height="800px"></iframe>',
-                     unsafe_allow_html=True)
+        st.write(f'<iframe src="{html.escape(pdf_url)}" width="100%" height="800px"></iframe>',
+                 unsafe_allow_html=True)
     else:
         st.session_state.chat_history = []
         st.session_state.pdf_url = None
@@ -92,24 +83,37 @@ with col1:
 
 with col2:
     with st.container(height=800, border=True):
-        if st.session_state.pdf_text and not st.session_state.summary:
-            with st.spinner("Summarizing..."):
-                summary = summarize_text(st.session_state.pdf_text)
-                st.session_state.summary = summary
-                st.session_state.chat_history = [
-                    {"question": 'Summarize the paper in Korean.',
-                     "answer": summary}]
-
         container = st.container()
         with container:
+            if pdf_url and pdf_url != st.session_state.pdf_url:
+                with st.spinner("Extracing contents..."):
+                    pdf_text = get_pdf_text(pdf_url)
+
+                st.session_state.chat_history = []
+                st.session_state.pdf_url = pdf_url
+                st.session_state.pdf_text = pdf_text
+                st.session_state.summary = None
+
             for chat in st.session_state.chat_history:
                 st.markdown("## 👨‍🦰" + chat['question'])
                 st.write(chat['answer'])
 
+            if st.session_state.pdf_text and not st.session_state.summary:
+                summary_request = "Summarize the paper in Korean."
+                st.markdown("## 👨‍🦰 " + summary_request)
+
+                with st.spinner("Summarizing..."):
+                    response = summarize_text(st.session_state.pdf_text)
+                    summary = st.write_stream(chunk.text for chunk in response)
+                    st.session_state.summary = summary
+                    st.session_state.chat_history = [
+                        {"question": summary_request,
+                         "answer": summary}]
+
         if st.session_state.pdf_text:
             user_question = st.text_input("Question:",
-                                          value="",
                                           placeholder='Input question here')
+
             if user_question:
                 with container:
                     st.markdown("## 👨‍🦰" + user_question)
@@ -117,8 +121,8 @@ with col2:
                         response = get_gemini_response(
                             user_question,
                             st.session_state.pdf_text)
-                        st.write(response)
-
-                    st.session_state.chat_history.append(
-                        {"question": user_question,
-                            "answer": response})
+                        answer = st.write_stream(
+                            chunk.text for chunk in response)
+                        st.session_state.chat_history.append(
+                            {"question": user_question,
+                                "answer": answer})
