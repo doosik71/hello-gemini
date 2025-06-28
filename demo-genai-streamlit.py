@@ -1,6 +1,7 @@
 from dotenv import load_dotenv
 from youtube_transcript_api import YouTubeTranscriptApi
 import google.generativeai as genai
+import google.generativeai.types as genai_types
 import io
 import os
 import PyPDF2
@@ -100,14 +101,14 @@ def _handle_html_command(url):
         st.chat_message("user").markdown(prompt)
         add_message("user", prompt)
 
-        with st.spinner(f"Reading HTML from {url}..."):
+        with st.spinner(f"Downloading HTML from {url}..."):
             response = requests.get(url)
             response.raise_for_status()
             html_content = response.text
 
         prompt = f"Please analyze and summarize the following HTML contents:\n\n{html_content}"
 
-        with st.spinner(f"Analyzing {url}"):
+        with st.spinner("Analyzing HTML content..."):
             response = st.session_state.model.generate_content(
                 st.session_state.chat_history + [{"role": "user", "parts": [prompt]}], stream=True)
 
@@ -116,6 +117,10 @@ def _handle_html_command(url):
 
         add_message("model", ai_response)
 
+    except genai_types.BlockedPromptException as e:
+        st.error(f"The prompt was blocked due to safety concerns or other reasons: {e}")
+    except genai_types.APIError as e:
+        st.error(f"A Gemini API error occurred: {e}")
     except Exception as e:
         st.error(f"An error occurred while processing HTML: {e}")
 
@@ -167,7 +172,7 @@ def _handle_pdf_command(url):
                 return
 
         # Step 3: Summarize pdf text by using model
-        with st.spinner("Analyzing PDF content..."):
+        with st.spinner("Summarizing PDF content..."):
             prompt = f"Please analyze and summarize the following PDF content:\n\n{text_content}"
 
             response = st.session_state.model.generate_content(
@@ -180,6 +185,10 @@ def _handle_pdf_command(url):
 
     except requests.RequestException as e:
         st.error(f"Error downloading PDF: {e}")
+    except genai_types.BlockedPromptException as e:
+        st.error(f"The prompt was blocked due to safety concerns or other reasons: {e}")
+    except genai_types.APIError as e:
+        st.error(f"A Gemini API error occurred: {e}")
     except Exception as e:
         traceback.print_exc()
         st.error(f"An error occurred while processing PDF: {e}")
@@ -216,7 +225,7 @@ def _handle_youtube_command(url):
             transcript_text = transcript_text[:30000] + \
                 "\n\n[Content truncated due to length...]"
 
-        with st.spinner("Analyzing YouTube transcript..."):
+        with st.spinner("Summarizing YouTube transcript..."):
             prompt = f"Please analyze and summarize the following YouTube video transcript:\n\n{transcript_text}"
 
             response = st.session_state.model.generate_content(
@@ -295,6 +304,10 @@ def _handle_user_input():
                 # Add assistant response to chat history
                 add_message("model", ai_response)
 
+            except genai_types.BlockedPromptException as e:
+                st.error(f"The prompt was blocked due to safety concerns or other reasons: {e}")
+            except genai_types.APIError as e:
+                st.error(f"A Gemini API error occurred: {e}")
             except Exception as e:
                 traceback.print_exc()
                 st.error(f"An error occurred: {e}")
