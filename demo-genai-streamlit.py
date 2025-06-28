@@ -9,6 +9,7 @@ import re
 import requests
 import streamlit as st
 import traceback
+import urllib.parse
 
 
 # 페이지 설정
@@ -85,6 +86,7 @@ Available commands:
 * `/pdf <url>`: Read PDF from URL and summarize its contents.
 * `/html <url>`: Read HTML from URL and summarize its contents.
 * `/youtube <url>`: Read YouTube transcripts from URL and summarize them.
+* `/subject <topic>`: Search arXiv for a topic and summarize the results.
 """
 
     add_message("model", help_message)
@@ -118,7 +120,8 @@ def _handle_html_command(url):
         add_message("model", ai_response)
 
     except genai_types.BlockedPromptException as e:
-        st.error(f"The prompt was blocked due to safety concerns or other reasons: {e}")
+        st.error(
+            f"The prompt was blocked due to safety concerns or other reasons: {e}")
     except genai_types.APIError as e:
         st.error(f"A Gemini API error occurred: {e}")
     except Exception as e:
@@ -186,7 +189,8 @@ def _handle_pdf_command(url):
     except requests.RequestException as e:
         st.error(f"Error downloading PDF: {e}")
     except genai_types.BlockedPromptException as e:
-        st.error(f"The prompt was blocked due to safety concerns or other reasons: {e}")
+        st.error(
+            f"The prompt was blocked due to safety concerns or other reasons: {e}")
     except genai_types.APIError as e:
         st.error(f"A Gemini API error occurred: {e}")
     except Exception as e:
@@ -241,6 +245,50 @@ def _handle_youtube_command(url):
         st.error(f"An error occurred while processing YouTube video: {e}")
 
 
+def _handle_subject_command(topic):
+    """
+    arXiv에서 주제를 검색하고 결과를 Gemini 모델로 요약한다.
+    """
+    try:
+        encoded_topic = urllib.parse.quote_plus(topic)
+        search_url = f"https://arxiv.org/search/?query={encoded_topic}&searchtype=all&source=header"
+        prompt = f"Analyze and summarize the search results from arXiv for topic: {topic}"
+        st.chat_message("user").markdown(prompt)
+        add_message("user", prompt)
+
+        with st.spinner(f"Searching arXiv for '{topic}'..."):
+            response = requests.get(search_url)
+            response.raise_for_status()
+            html_content = response.text
+
+        # 텍스트가 너무 길면 잘라내기 (모델 토큰 제한 고려)
+        if len(html_content) > 30000:  # 약 30KB 제한
+            html_content = html_content[:30000] + \
+                "\n\n[Content truncated due to length...]"
+
+        with st.spinner("Summarizing arXiv search results..."):
+            prompt = f"Please analyze and summarize the following arXiv search results (HTML content):\n\n{html_content}"
+
+            response = st.session_state.model.generate_content(
+                st.session_state.chat_history + [{"role": "user", "parts": [prompt]}], stream=True)
+
+        with st.chat_message("assistant"):
+            ai_response = st.write_stream(chunk.text for chunk in response)
+
+        add_message("model", ai_response)
+
+    except requests.RequestException as e:
+        st.error(f"Error searching arXiv: {e}")
+    except genai_types.BlockedPromptException as e:
+        st.error(
+            f"The prompt was blocked due to safety concerns or other reasons: {e}")
+    except genai_types.APIError as e:
+        st.error(f"A Gemini API error occurred: {e}")
+    except Exception as e:
+        traceback.print_exc()
+        st.error(f"An error occurred while processing arXiv search: {e}")
+
+
 def _handle_user_input():
     """
     Example:
@@ -279,6 +327,13 @@ def _handle_user_input():
             else:
                 st.error(
                     "Please provide a YouTube URL after /youtube, e.g., /youtube https://www.youtube.com/watch?v=dQw4w9WgXcQ")
+        elif prompt.lower().startswith("/subject"):
+            topic = prompt[len("/subject"):].strip()
+            if topic:
+                _handle_subject_command(topic)
+            else:
+                st.error(
+                    "Please provide topic after /subject, e.g., /subject large language model")
         elif prompt.startswith("https://arxiv.org/pdf/"):
             _handle_pdf_command(prompt)
         elif prompt.startswith("https://www.youtube.com/"):
@@ -305,7 +360,8 @@ def _handle_user_input():
                 add_message("model", ai_response)
 
             except genai_types.BlockedPromptException as e:
-                st.error(f"The prompt was blocked due to safety concerns or other reasons: {e}")
+                st.error(
+                    f"The prompt was blocked due to safety concerns or other reasons: {e}")
             except genai_types.APIError as e:
                 st.error(f"A Gemini API error occurred: {e}")
             except Exception as e:
