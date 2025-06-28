@@ -1,18 +1,19 @@
 from dotenv import load_dotenv
+from youtube_transcript_api import YouTubeTranscriptApi
 import google.generativeai as genai
+import io
 import os
+import PyPDF2
+import re
 import requests
 import streamlit as st
 import traceback
-import PyPDF2
-import io
 
 
 # 페이지 설정
 st.set_page_config(
     page_title="Gemini Chatbot",
     page_icon="🤖",
-    layout="wide",
     initial_sidebar_state="expanded"
 )
 
@@ -82,6 +83,7 @@ Available commands:
 * `/clear`: Clear chat history.
 * `/pdf <url>`: Read PDF from URL and summarize its contents.
 * `/html <url>`: Read HTML from URL and summarize its contents.
+* `/youtube <url>`: Read YouTube transcripts from URL and summarize them.
 """
 
     add_message("model", help_message)
@@ -183,6 +185,53 @@ def _handle_pdf_command(url):
         st.error(f"An error occurred while processing PDF: {e}")
 
 
+def _handle_youtube_command(url):
+    """
+    YouTube 동영상 URL에서 스크립트를 추출하고 Gemini 모델로 요약한다.
+    """
+    try:
+        video_id_match = re.search(r"(?<=v=)[a-zA-Z0-9_-]+", url)
+        if not video_id_match:
+            st.error(
+                "Invalid YouTube URL. Please provide a valid YouTube video URL.")
+            return
+        video_id = video_id_match.group(0)
+
+        prompt = f"Analyze the YouTube video transcript from {url}"
+        st.chat_message("user").markdown(prompt)
+        add_message("user", prompt)
+
+        with st.spinner(f"Fetching transcript from YouTube video {url}..."):
+            transcript_list = YouTubeTranscriptApi.get_transcript(
+                video_id, languages=("ko", "en"))
+            transcript_text = " ".join([d['text'] for d in transcript_list])
+
+        if not transcript_text.strip():
+            st.error(
+                "Could not extract transcript from the YouTube video. It might not have captions or be unavailable.")
+            return
+
+        # 텍스트가 너무 길면 잘라내기 (모델 토큰 제한 고려)
+        if len(transcript_text) > 30000:  # 약 30KB 제한
+            transcript_text = transcript_text[:30000] + \
+                "\n\n[Content truncated due to length...]"
+
+        with st.spinner("Analyzing YouTube transcript..."):
+            prompt = f"Please analyze and summarize the following YouTube video transcript:\n\n{transcript_text}"
+
+            response = st.session_state.model.generate_content(
+                st.session_state.chat_history + [{"role": "user", "parts": [prompt]}], stream=True)
+
+        with st.chat_message("assistant"):
+            ai_response = st.write_stream(chunk.text for chunk in response)
+
+        add_message("model", ai_response)
+
+    except Exception as e:
+        traceback.print_exc()
+        st.error(f"An error occurred while processing YouTube video: {e}")
+
+
 def _handle_user_input():
     """
     Example:
@@ -190,9 +239,12 @@ def _handle_user_input():
     /clear
     /pdf https://arxiv.org/pdf/2506.21384
     /html https://cadabra.tistory.com/138
+    /youtube https://www.youtube.com/watch?v=dQw4w9WgXcQ
     """
 
     if prompt := st.chat_input("Say something..."):
+        prompt = prompt.strip()
+
         if prompt.lower() == "/clear":
             _handle_clear_command()
         elif prompt.lower() == "/help":
@@ -211,6 +263,19 @@ def _handle_user_input():
             else:
                 st.error(
                     "Please provide an HTML URL after /html, e.g., /html https://example.com")
+        elif prompt.lower().startswith("/youtube"):
+            url = prompt[len("/youtube"):].strip()
+            if url:
+                _handle_youtube_command(url)
+            else:
+                st.error(
+                    "Please provide a YouTube URL after /youtube, e.g., /youtube https://www.youtube.com/watch?v=dQw4w9WgXcQ")
+        elif prompt.startswith("https://arxiv.org/pdf/"):
+            _handle_pdf_command(prompt)
+        elif prompt.startswith("https://www.youtube.com/"):
+            _handle_youtube_command(prompt)
+        elif prompt.startswith("http://") or prompt.startswith("https://"):
+            _handle_html_command(prompt)
         else:
             # Display user message in chat message container
             st.chat_message("user").markdown(prompt)
