@@ -28,3 +28,4 @@ This file helps Gemini understand your project better. You can provide instructi
       * `/pdf <url>`: Read PDF from URL and summarize its contents.
       * `/html <url>`: Read HTML from URL and summarize its contents.
       * `/youtube <url>`: Read YouTube transcripts from URL and summarize them.
+*   `demo-genai-pdf.py`: PDF URL을 입력받고, 해당 PDF를 왼쪽 pane에 출력한다. 오른쪽 pane에는 PDF의 요약 내용을 출력하고 사용자 질의를 받아 PDF에 대해 답변을 한다.
