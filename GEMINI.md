@@ -22,3 +22,9 @@ This file helps Gemini understand your project better. You can provide instructi
 *   `README.md`: Contains project documentation.
 *   `demo-genai-console.py`: A console-based application demonstrating interaction with the Generative AI.
 *   `demo-genai-streamlit.py`: A Streamlit GUI application for chatting with the Generative AI.
+    * commands:
+      * `/help`: Show available commands.
+      * `/clear`: Clear chat history.
+      * `/pdf <url>`: Read PDF from URL and summarize its contents.
+      * `/html <url>`: Read HTML from URL and summarize its contents.
+      * `/youtube <url>`: Read YouTube transcripts from URL and summarize them.
