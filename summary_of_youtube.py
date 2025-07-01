@@ -8,11 +8,13 @@ import traceback
 fs = FileStore("data/youtube")
 
 summary_guide = """Summarize the main points and detailed explanations from the script below.
-Use appropriate headings with relevant emojis to represent each section.
-Present each section as a cohesive paragraph under its heading.
-Ensure the summary is clear, detailed, and informative, resembling an executive summary in news articles.
-Maintain a direct and objective tone without using phrases like "the script provides."
-Write in Korean."""
+Begin with the video title caption, starting with `#`.
+Use section headings marked with `##` and include relevant emojis for each section.
+Each section should be written as a cohesive paragraph that clearly and thoroughly conveys the main ideas.
+The summary should be informative, concise, and resemble an executive news article.
+Maintain a direct and objective tone.
+Do not use phrases like "the script provides."
+Write the summary in Korean."""
 
 
 def get_youtube_summary(video_id: str) -> str:
@@ -55,7 +57,11 @@ def get_youtube_summary(video_id: str) -> str:
 
 
 def summarize() -> None:
-    youtube_url = st.text_input("Youtube URL:", key="youtube_url")
+    if "youtube_url" not in st.session_state:
+        st.session_state.youtube_url = ""
+
+    youtube_url = st.text_input("Youtube URL:", value=st.session_state.youtube_url)
+    st.session_state.youtube_url = youtube_url
 
     if not youtube_url:
         return
@@ -71,11 +77,9 @@ def summarize() -> None:
         return
 
     st.write(
-        f'<iframe width="560" height="315" '
-        + 'src="https://www.youtube.com/embed/{video_id}" '
+        '<iframe width="560" height="315" id="youtube_video" '
+        + f'src="https://www.youtube.com/embed/{video_id}" '
         + 'title="YouTube video player" frameborder="0" '
-        + 'allow="autoplay; encrypted-media; picture-in-picture" '
-        + 'referrerpolicy="strict-origin-when-cross-origin" '
         + "allowfullscreen></iframe>",
         unsafe_allow_html=True,
     )

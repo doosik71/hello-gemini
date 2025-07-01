@@ -55,7 +55,11 @@ def get_arxiv_summary(pdf_url: str) -> str:
 
 
 def summarize() -> None:
-    pdf_url = st.text_input("PDF URL:")
+    if "arxiv_pdf_url" not in st.session_state:
+        st.session_state.arxiv_pdf_url = ""
+
+    pdf_url = st.text_input("PDF URL:", value=st.session_state.arxiv_pdf_url)
+    st.session_state.arxiv_pdf_url = pdf_url
 
     if not pdf_url:
         return
