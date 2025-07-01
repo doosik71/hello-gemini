@@ -34,8 +34,11 @@ def get_youtube_summary(video_id: str) -> str:
 
         prompt = (
             "Based on the following context, answer the question:\n\n"
-            + "Context: ' + transcript_text + '\n\n"
-            + "Question: " + summary_guide
+            + "Context: "
+            + transcript_text
+            + "\n\n"
+            + "Question: "
+            + summary_guide
         )
 
         with st.spinner("Summarizing transcript..."):
@@ -91,5 +94,5 @@ def summarize() -> None:
         if summary_results:
             fs[video_id] = summary_results
 
-    if st.button("Show markdown"):
+    if summary_results and st.button("Show markdown"):
         st.text_area("Markdown:", summary_results, height=600)

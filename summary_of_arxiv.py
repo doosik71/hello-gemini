@@ -6,7 +6,7 @@ from filestore import FileStore
 from PyPDF2 import PdfReader
 
 
-fs = FileStore('data/arxiv')
+fs = FileStore("data/arxiv")
 
 summary_guide = """Summarize the main points from the uploaded PDF file using markdown bullet points.
 Maintain the numbering and titles of chapters, sections, and subsections as in the paper's table of contents.
@@ -35,13 +35,17 @@ def get_arxiv_summary(pdf_url: str) -> str:
 
         prompt = (
             "Based on the following context, answer the question:\n\n"
-            + "Context: ' + pdf_text + '\n\n"
-            + "Question: " + summary_guide
+            + "Context: "
+            + pdf_text
+            + "\n\n"
+            + "Question: "
+            + summary_guide
         )
 
         with st.spinner("Analyzing..."):
             response = st.session_state.model.generate_content(
-                [{"role": "user", "parts": [prompt]}], stream=True)
+                [{"role": "user", "parts": [prompt]}], stream=True
+            )
 
         with st.container():
             return st.write_stream(chunk.text for chunk in response)
@@ -67,5 +71,5 @@ def summarize() -> None:
         if summary_results:
             fs[pdf_url] = summary_results
 
-    if st.button("Show markdown"):
+    if summary_results and st.button("Show markdown"):
         st.text_area("Markdown:", summary_results, height=600)

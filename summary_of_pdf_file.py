@@ -27,13 +27,17 @@ def summarize(pdf_file) -> None:
 
             text += page.extract_text() or ""
 
-        prompt = (f"Based on the following context, answer the question:\n\n" +
-                  f"Context: {text}\n\n" +
-                  f"Question: " + summary_guide)
+        prompt = (
+            "Based on the following context, answer the question:\n\n"
+            + "Context: "
+            + text
+            + "\n\n"
+            + "Question: "
+            + summary_guide
+        )
 
         with st.spinner("Analyzing..."):
-            response = st.session_state.model.generate_content(
-                prompt, stream=True)
+            response = st.session_state.model.generate_content(prompt, stream=True)
 
         with st.container():
             st.write_stream(chunk.text for chunk in response)
