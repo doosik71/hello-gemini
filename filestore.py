@@ -1,4 +1,3 @@
-import io
 import os
 import base64
 
@@ -13,8 +12,7 @@ class FileStore:
         name 문자열을 base64로 인코딩하여 안전한 파일 이름으로 변환.
         """
 
-        encoded = base64.urlsafe_b64encode(name.encode("utf-8")).decode("ascii")
-        return encoded
+        return base64.urlsafe_b64encode(name.encode("utf-8")).decode("ascii")
 
     def __setitem__(self, name: str, data: str) -> None:
         """
@@ -25,8 +23,15 @@ class FileStore:
         encoded_name = self._encode_name(name)
         file_path = os.path.join(self.data_dir, encoded_name)
 
-        with open(file_path, "w", encoding="utf-8") as f:
-            f.write(data)
+        try:
+            if data:
+                with open(file_path, "w", encoding="utf-8") as f:
+                    f.write(data)
+            else:
+                os.remove(file_path)
+        except:
+            print("Error while accessing", file_path)
+            pass
 
     def __getitem__(self, name: str) -> str:
         """
@@ -37,8 +42,12 @@ class FileStore:
         encoded_name = self._encode_name(name)
         file_path = os.path.join(self.data_dir, encoded_name)
 
-        if not os.path.exists(file_path):
-            return None
+        try:
+            if not os.path.exists(file_path):
+                return None
 
-        with open(file_path, "r", encoding="utf-8") as f:
-            return f.read()
+            with open(file_path, "r", encoding="utf-8") as f:
+                return f.read()
+        except:
+            print("Error while accessing", file_path)
+            pass

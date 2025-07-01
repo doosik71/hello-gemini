@@ -6,7 +6,7 @@ from filestore import FileStore
 from PyPDF2 import PdfReader
 
 
-fs = FileStore()
+fs = FileStore('data/arxiv')
 
 summary_guide = """Summarize the main points from the uploaded PDF file using markdown bullet points.
 Maintain the numbering and titles of chapters, sections, and subsections as in the paper's table of contents.
@@ -18,30 +18,30 @@ Apply heading level 1 (#) for title captions, level 2 (##) for chapter captions,
 Use $...$ for inline math and $$...$$ for block math."""
 
 
-def get_summary(pdf_url: str) -> str:
+def get_arxiv_summary(pdf_url: str) -> str:
     try:
         response = requests.get(pdf_url)
         pdf_data = response.content
 
         reader = PdfReader(io.BytesIO(pdf_data))
-        text = ""
+        pdf_text = ""
 
         for page in reader.pages:
-            if len(text) > 500000:
+            if len(pdf_text) > 500000:
                 st.warning("Long text will be truncated.")
                 break
 
-            text += page.extract_text() or ""
+            pdf_text += page.extract_text() or ""
 
         prompt = (
-            f"Based on the following context, answer the question:\n\n"
-            + f"Context: {text}\n\n"
-            + f"Question: "
-            + summary_guide
+            "Based on the following context, answer the question:\n\n"
+            + "Context: ' + pdf_text + '\n\n"
+            + "Question: " + summary_guide
         )
 
         with st.spinner("Analyzing..."):
-            response = st.session_state.model.generate_content(prompt, stream=True)
+            response = st.session_state.model.generate_content(
+                [{"role": "user", "parts": [prompt]}], stream=True)
 
         with st.container():
             return st.write_stream(chunk.text for chunk in response)
@@ -58,14 +58,14 @@ def summarize() -> None:
 
     pdf_url = pdf_url.replace("https://arxiv.org/abs/", "https://arxiv.org/pdf/")
 
-    summary_results = fs['arxiv-' + pdf_url]
+    summary_results = fs[pdf_url]
 
     if summary_results:
         st.write(summary_results)
     else:
-        summary_results = get_summary(pdf_url)
+        summary_results = get_arxiv_summary(pdf_url)
         if summary_results:
-            fs['arxiv-' + pdf_url] = summary_results
+            fs[pdf_url] = summary_results
 
     if st.button("Show markdown"):
         st.text_area("Markdown:", summary_results, height=600)

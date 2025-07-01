@@ -14,6 +14,16 @@
 GEMINI_API_KEY=insert_gemini_api_key_here
 ```
 
+## Set-up
+
+- Install `uv` from <https://docs.astral.sh/uv/getting-started/installation/>
+
+```bash
+uv python install
+uv venv
+uv pip install .
+```
+
 ## Install Gemini CLI
 
 ```cmd
