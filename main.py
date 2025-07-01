@@ -42,7 +42,7 @@ if "model" not in st.session_state:
 st.set_page_config(
     page_title=title,
     page_icon="🤖",
-    layout="wide",
+    # layout="wide",
     initial_sidebar_state="expanded"
 )
 
@@ -53,22 +53,28 @@ with st.sidebar:
 
     menu_selection = st.selectbox(
         "메뉴를 선택하세요:",
-        ("---", "Youtube 요약", "논문 파일 요약", "논문 분석")
+        ("---", "Youtube 요약", "논문 파일 요약", "Arxiv 논문 요약")
     )
 
 if menu_selection == "Youtube 요약":
     import summary_of_youtube
 
-    set_max_width(800)
+    # set_max_width(800)
     url = st.text_input("Youtube URL:", key="youtube_url")
     summary_of_youtube.summarize(url)
 
 elif menu_selection == "논문 파일 요약":
     import summary_of_pdf_file
 
-    set_max_width(1000)
+    # set_max_width(1000)
     uploaded_file = st.file_uploader("PDF file:", type=["pdf"], key="pdf_file")
     summary_of_pdf_file.summarize(uploaded_file)
+
+elif menu_selection == "Arxiv 논문 요약":
+    import summary_of_arxiv
+
+    # set_max_width(1000)
+    summary_of_arxiv.summarize()
 
 # elif menu_selection == "논문 검색":
 #     st.header("논문 검색 화면")
